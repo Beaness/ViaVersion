@@ -100,21 +100,34 @@ public final class Protocol1_20_2To1_20_3 extends AbstractProtocol<ClientboundPa
             wrapper.write(Types.BOOLEAN, false);
         });
         registerClientbound(ClientboundPackets1_20_2.SET_OBJECTIVE, wrapper -> {
-            final String objectiveName = wrapper.passthrough(Types.STRING); // Objective Name
-            final byte action = wrapper.passthrough(Types.BYTE); // Method
-            final ScoreboardStorage scoreboard = wrapper.user().<ProtocolStorables1_20_3>storables(this).scoreboard();
+            final String objectiveName = wrapper.passthrough(Types.STRING);
+            final byte action = wrapper.passthrough(Types.BYTE);
             if (action == 0 || action == 2) {
+                if (!Via.getConfig().hideScoreboardNumbers()) {
+                    convertComponent(wrapper); // Display name
+                    wrapper.passthrough(Types.VAR_INT); // Render type
+                    wrapper.write(Types.BOOLEAN, false); // No number format
+                    return;
+                }
+
                 final Tag displayName = ComponentUtil.jsonToTag(wrapper.read(Types.COMPONENT));
-                wrapper.write(Types.TRUSTED_TAG, displayName); // Display Name
-                final int render = wrapper.passthrough(Types.VAR_INT); // Render type
+                wrapper.write(Types.TRUSTED_TAG, displayName);
+
+                final ScoreboardStorage scoreboard = wrapper.user().<ProtocolStorables1_20_3>storables(this).scoreboard();
+                final int render = wrapper.passthrough(Types.VAR_INT);
                 final boolean hideNumberFormat = shouldHideNumberFormat(scoreboard, objectiveName, render);
                 writeNumberFormat(wrapper, hideNumberFormat);
                 scoreboard.putObjective(objectiveName, displayName.copy(), render, hideNumberFormat);
-            } else if (action == 1) {
+            } else if (action == 1 && Via.getConfig().hideScoreboardNumbers()) {
+                final ScoreboardStorage scoreboard = wrapper.user().<ProtocolStorables1_20_3>storables(this).scoreboard();
                 scoreboard.removeObjective(objectiveName);
             }
         });
         registerClientbound(ClientboundPackets1_20_2.SET_DISPLAY_OBJECTIVE, wrapper -> {
+            if (!Via.getConfig().hideScoreboardNumbers()) {
+                return;
+            }
+
             final int slot = wrapper.passthrough(Types.VAR_INT);
             final String objectiveName = wrapper.passthrough(Types.STRING);
             final ScoreboardStorage scoreboard = wrapper.user().<ProtocolStorables1_20_3>storables(this).scoreboard();
@@ -351,7 +364,7 @@ public final class Protocol1_20_2To1_20_3 extends AbstractProtocol<ClientboundPa
     }
 
     private static boolean shouldHideNumberFormat(final ScoreboardStorage scoreboard, final String objectiveName, final int renderType) {
-        return renderType == 0 && Via.getConfig().hideScoreboardNumbers() && scoreboard.isSidebar(objectiveName);
+        return renderType == 0 && scoreboard.isSidebar(objectiveName);
     }
 
     private static void writeNumberFormat(final PacketWrapper wrapper, final boolean hideNumberFormat) {

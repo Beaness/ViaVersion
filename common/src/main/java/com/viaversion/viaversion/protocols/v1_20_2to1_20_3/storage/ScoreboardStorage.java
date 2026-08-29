@@ -18,6 +18,8 @@
 package com.viaversion.viaversion.protocols.v1_20_2to1_20_3.storage;
 
 import com.viaversion.nbt.tag.Tag;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.HashMap;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,7 +30,7 @@ public final class ScoreboardStorage {
     private static final int FIRST_TEAM_SIDEBAR_SLOT = 3;
     private static final int LAST_TEAM_SIDEBAR_SLOT = 18;
     private final Map<String, Objective> objectives = new HashMap<>();
-    private final Map<Integer, String> displaySlots = new HashMap<>();
+    private final Int2ObjectMap<String> displaySlots = new Int2ObjectOpenHashMap<>();
 
     public void putObjective(final String name, final Tag displayName, final int renderType, final boolean numberFormatHidden) {
         objectives.put(name, new Objective(displayName, renderType, numberFormatHidden));
@@ -58,8 +60,8 @@ public final class ScoreboardStorage {
     }
 
     public boolean isSidebar(final String objectiveName) {
-        for (final Map.Entry<Integer, String> entry : displaySlots.entrySet()) {
-            if (isSidebarSlot(entry.getKey()) && objectiveName.equals(entry.getValue())) {
+        for (final Int2ObjectMap.Entry<String> entry : displaySlots.int2ObjectEntrySet()) {
+            if (isSidebarSlot(entry.getIntKey()) && objectiveName.equals(entry.getValue())) {
                 return true;
             }
         }
